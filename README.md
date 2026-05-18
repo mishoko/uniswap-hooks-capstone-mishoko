@@ -4,6 +4,10 @@
 
 Implementation of the VPIN (Volume-synchronized Probability of Informed Trading) metric that dynamically adjusts swap fees based on detected order flow toxicity, incorporating Nezlobin-style directional fee asymmetry to protect LPs from adverse selection.
 
+[![Demo Video](https://img.youtube.com/vi/2Nmq0-C-P5g/maxresdefault.jpg)](https://youtu.be/2Nmq0-C-P5g)
+Note: *Claiming the overall metric is "more accurate" implies empirical validation we haven't done :) (yet)
+> [Watch the 5-minute explainer video](https://youtu.be/2Nmq0-C-P5g)
+
 ## Problem
 
 Liquidity providers in AMMs face systematic losses from informed traders (toxic order flow). Research shows LPs on major Uniswap v3 pools lost ~$60M more than they earned in fees over the analyzed period (Nezlobin, 2022). Current dynamic fee hooks use simplistic volatility proxies (gas prices, historical vol) that can't distinguish between organic price movement and toxic informed flow.
@@ -48,11 +52,15 @@ For N volume buckets, each of size V:
   Dynamic Fee = baseFee + (maxFee - baseFee) * VPIN
 ```
 
-### Trade Classification
+### Trade Classification: Why AMMs Give VPIN an Edge
 
-In AMMs, trade direction is unambiguous (unlike TradFi where Bulk Volume Classification is needed):
+The original VPIN paper (Easley et al., 2012) was designed for order books, where trade direction is unknown. The authors use Bulk Volume Classification (BVC) — a probabilistic method that estimates the buy/sell split of each volume bar using a normal CDF approximation of price changes. BVC is an estimation. It can and does misclassify trades, especially during volatile periods when price changes don't cleanly map to trade direction.
+
+In a Uniswap v4 AMM, this problem disappears entirely. Trade direction is deterministic:
 - `zeroForOne = true` → selling token0 (classified as "sell")
 - `zeroForOne = false` → buying token0 (classified as "buy")
+
+This eliminates the probabilistic classification step that introduces noise in the original methodology — removing one source of error from the VPIN calculation. The underlying assumptions about informed vs uninformed flow and the choice of bucket parameters still apply, but the classification input is provably exact rather than estimated.
 
 ### Directional Fee Asymmetry (Nezlobin)
 
